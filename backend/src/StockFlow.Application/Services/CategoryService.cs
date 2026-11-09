@@ -1,316 +1,198 @@
 
 using StockFlow.Application.Common.Exceptions;
-using StockFlow.Application.DTOs.Common;
-using StockFlow.Application.DTOs.Products;
+using StockFlow.Application.DTOs.Categories;
 using StockFlow.Application.Interfaces.Repositories;
 using StockFlow.Application.Interfaces.Services;
 using StockFlow.Domain.Entities;
 
 namespace StockFlow.Application.Services;
 
-public class ProductService : IProductService
+public class CategoryService : ICategoryService
 {
-    private readonly IProductRepository _productRepository;
     private readonly ICategoryRepository _categoryRepository;
 
-    public ProductService(
-        IProductRepository productRepository,
-        ICategoryRepository categoryRepository)
+    public CategoryService(ICategoryRepository categoryRepository)
     {
-        _productRepository = productRepository;
         _categoryRepository = categoryRepository;
     }
 
-    public async Task<PagedResult<ProductDto>> GetAllAsync(
-        ProductQueryParameters parameters,
+    public async Task<IReadOnlyList<CategoryDto>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        if (parameters.Page < 1)
-        {
-            throw new ValidationException(
-                "Page number must be greater than zero."
-            );
-        }
-
-        if (parameters.PageSize < 1 || parameters.PageSize > 100)
-        {
-            throw new ValidationException(
-                "Page size must be between 1 and 100."
-            );
-        }
-
-        var products = await _productRepository.GetAllAsync(
-            parameters,
+        var categories = await _categoryRepository.GetAllAsync(
             cancellationToken
         );
 
-        var totalCount = await _productRepository.CountAsync(
-            parameters,
-            cancellationToken
-        );
-
-        return new PagedResult<ProductDto>
-        {
-            Items = products.Select(MapToDto).ToList(),
-            Page = parameters.Page,
-            PageSize = parameters.PageSize,
-            TotalCount = totalCount
-        };
+        return categories.Select(MapToDto).ToList();
     }
 
-    public async Task<ProductDto?> GetByIdAsync(
+    public async Task<CategoryDto?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var product = await _productRepository.GetByIdAsync(
-            id,
-            cancellationToken
-        );
-
-        if (product is null)
-        {
-            throw new NotFoundException(
-                $"Product with ID '{id}' was not found."
-            );
-        }
-
-        return MapToDto(product);
-    }
-
-    public async Task<ProductDto> CreateAsync(
-        CreateProductRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        ValidateProduct(
-            request.SKU,
-            request.Name,
-            request.Description,
-            request.UnitPrice,
-            request.UnitCost
-        );
-
-        var sku = request.SKU.Trim();
-
-        var existingProduct = await _productRepository.GetBySkuAsync(
-            sku,
-            cancellationToken
-        );
-
-        if (existingProduct is not null)
-        {
-            throw new ConflictException(
-                $"A product with SKU '{sku}' already exists."
-            );
-        }
-
-        if (!await _productRepository.CategoryIsActiveAsync(
-            request.CategoryId,
-            cancellationToken))
-        {
-            throw new ValidationException(
-                "The selected category does not exist or is inactive."
-            );
-        }
-
         var category = await _categoryRepository.GetByIdAsync(
-            request.CategoryId,
+            id,
             cancellationToken
         );
 
         if (category is null)
         {
-            throw new ValidationException(
-                "The selected category could not be found."
+            throw new NotFoundException(
+                $"Category with ID '{id}' was not found."
             );
         }
 
-        var product = new Product
+        return MapToDto(category);
+    }
+
+    public async Task<CategoryDto> CreateAsync(
+        CreateCategoryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var name = request.Name?.Trim();
+
+        if (string.IsNullOrWhiteSpace(name))
         {
-            SKU = sku,
-            Name = request.Name.Trim(),
+            throw new ValidationException(
+                "Category name is required."
+            );
+        }
+
+        if (name.Length > 100)
+        {
+            throw new ValidationException(
+                "Category name cannot exceed 100 characters."
+            );
+        }
+
+        var existingCategory = await _categoryRepository.GetByNameAsync(
+            name,
+            cancellationToken
+        );
+
+        if (existingCategory is not null)
+        {
+            throw new ConflictException(
+                $"A category named '{name}' already exists."
+            );
+        }
+
+        var category = new Category
+        {
+            Name = name,
             Description = request.Description?.Trim(),
-            CategoryId = request.CategoryId,
-            Category = category,
-            UnitPrice = request.UnitPrice,
-            UnitCost = request.UnitCost,
             IsActive = true
         };
 
-        await _productRepository.AddAsync(
-            product,
+        await _categoryRepository.AddAsync(
+            category,
             cancellationToken
         );
 
-        return MapToDto(product);
+        return MapToDto(category);
     }
 
-    public async Task<ProductDto?> UpdateAsync(
+    public async Task<CategoryDto?> UpdateAsync(
         Guid id,
-        UpdateProductRequest request,
+        UpdateCategoryRequest request,
         CancellationToken cancellationToken = default)
     {
-        var product = await _productRepository.GetByIdAsync(
-            id,
-            cancellationToken
-        );
-
-        if (product is null)
-        {
-            throw new NotFoundException(
-                $"Product with ID '{id}' was not found."
-            );
-        }
-
-        ValidateProduct(
-            product.SKU,
-            request.Name,
-            request.Description,
-            request.UnitPrice,
-            request.UnitCost
-        );
-
-        if (!await _productRepository.CategoryIsActiveAsync(
-            request.CategoryId,
-            cancellationToken))
-        {
-            throw new ValidationException(
-                "The selected category does not exist or is inactive."
-            );
-        }
-
         var category = await _categoryRepository.GetByIdAsync(
-            request.CategoryId,
+            id,
             cancellationToken
         );
 
         if (category is null)
         {
-            throw new ValidationException(
-                "The selected category could not be found."
+            throw new NotFoundException(
+                $"Category with ID '{id}' was not found."
             );
         }
 
-        product.Name = request.Name.Trim();
-        product.Description = request.Description?.Trim();
-        product.CategoryId = request.CategoryId;
-        product.Category = category;
-        product.UnitPrice = request.UnitPrice;
-        product.UnitCost = request.UnitCost;
-        product.UpdatedAtUtc = DateTime.UtcNow;
+        var name = request.Name?.Trim();
 
-        await _productRepository.UpdateAsync(
-            product,
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ValidationException(
+                "Category name is required."
+            );
+        }
+
+        if (name.Length > 100)
+        {
+            throw new ValidationException(
+                "Category name cannot exceed 100 characters."
+            );
+        }
+
+        var existingCategory = await _categoryRepository.GetByNameAsync(
+            name,
             cancellationToken
         );
 
-        return MapToDto(product);
+        if (existingCategory is not null &&
+            existingCategory.Id != category.Id)
+        {
+            throw new ConflictException(
+                $"A category named '{name}' already exists."
+            );
+        }
+
+        category.Name = name;
+        category.Description = request.Description?.Trim();
+        category.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _categoryRepository.UpdateAsync(
+            category,
+            cancellationToken
+        );
+
+        return MapToDto(category);
     }
 
     public async Task<bool> DeactivateAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var product = await _productRepository.GetByIdAsync(
+        var category = await _categoryRepository.GetByIdAsync(
             id,
             cancellationToken
         );
 
-        if (product is null)
+        if (category is null)
         {
             throw new NotFoundException(
-                $"Product with ID '{id}' was not found."
+                $"Category with ID '{id}' was not found."
             );
         }
 
-        if (!product.IsActive)
+        if (!category.IsActive)
         {
             throw new ConflictException(
-                "This product is already inactive."
+                "This category is already inactive."
             );
         }
 
-        product.IsActive = false;
-        product.UpdatedAtUtc = DateTime.UtcNow;
+        category.IsActive = false;
+        category.UpdatedAtUtc = DateTime.UtcNow;
 
-        await _productRepository.UpdateAsync(
-            product,
+        await _categoryRepository.UpdateAsync(
+            category,
             cancellationToken
         );
 
         return true;
     }
 
-    private static void ValidateProduct(
-        string sku,
-        string name,
-        string? description,
-        decimal unitPrice,
-        decimal unitCost)
+    private static CategoryDto MapToDto(Category category)
     {
-        if (string.IsNullOrWhiteSpace(sku))
+        return new CategoryDto
         {
-            throw new ValidationException(
-                "Product SKU is required."
-            );
-        }
-
-        if (sku.Trim().Length > 64)
-        {
-            throw new ValidationException(
-                "Product SKU cannot exceed 64 characters."
-            );
-        }
-
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ValidationException(
-                "Product name is required."
-            );
-        }
-
-        if (name.Trim().Length > 150)
-        {
-            throw new ValidationException(
-                "Product name cannot exceed 150 characters."
-            );
-        }
-
-        if (description?.Length > 1000)
-        {
-            throw new ValidationException(
-                "Product description cannot exceed 1000 characters."
-            );
-        }
-
-        if (unitPrice < 0)
-        {
-            throw new ValidationException(
-                "Unit price cannot be negative."
-            );
-        }
-
-        if (unitCost < 0)
-        {
-            throw new ValidationException(
-                "Unit cost cannot be negative."
-            );
-        }
-    }
-
-    private static ProductDto MapToDto(Product product)
-    {
-        return new ProductDto
-        {
-            Id = product.Id,
-            SKU = product.SKU,
-            Name = product.Name,
-            Description = product.Description,
-            CategoryId = product.CategoryId,
-            CategoryName = product.Category.Name,
-            UnitPrice = product.UnitPrice,
-            UnitCost = product.UnitCost,
-            IsActive = product.IsActive,
-            CreatedAtUtc = product.CreatedAtUtc
+            Id = category.Id,
+            Name = category.Name,
+            Description = category.Description,
+            IsActive = category.IsActive,
+            CreatedAtUtc = category.CreatedAtUtc
         };
     }
 }

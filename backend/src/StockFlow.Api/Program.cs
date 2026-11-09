@@ -1,9 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using StockFlow.Infrastructure.Persistence;
+using StockFlow.Application.Interfaces.Repositories;
+using StockFlow.Application.Interfaces.Services;
+using StockFlow.Application.Services;
+using StockFlow.Infrastructure.Persistence.Repositories;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+
+builder.Services.AddControllers();
 
 var connectionString = builder.Configuration
     .GetConnectionString("DefaultConnection")
@@ -14,6 +21,12 @@ var connectionString = builder.Configuration
 builder.Services.AddDbContext<StockFlowDbContext>(options =>
     options.UseNpgsql(connectionString)
 );
+
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
 builder.Services.AddCors(options =>
 {
@@ -39,6 +52,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("StockFlowFrontend");
+
+app.MapControllers();
 
 
 app.MapGet("/api/health", () =>
