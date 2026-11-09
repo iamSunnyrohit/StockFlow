@@ -1,6 +1,19 @@
+using Microsoft.EntityFrameworkCore;
+using StockFlow.Infrastructure.Persistence;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+
+var connectionString = builder.Configuration
+    .GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' was not found."
+    );
+
+builder.Services.AddDbContext<StockFlowDbContext>(options =>
+    options.UseNpgsql(connectionString)
+);
 
 builder.Services.AddCors(options =>
 {
@@ -17,12 +30,17 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    using var scope = app.Services.CreateScope();
+
+    var dbContext = scope.ServiceProvider
+        .GetRequiredService<StockFlowDbContext>();
+
+    await DbInitializer.InitializeAsync(dbContext);
 }
 
 app.UseCors("StockFlowFrontend");
 
-// Health endpoint
+
 app.MapGet("/api/health", () =>
 {
     return Results.Ok(new
@@ -30,6 +48,26 @@ app.MapGet("/api/health", () =>
         status = "healthy",
         application = "StockFlow API",
         version = "1.0.0"
+    });
+});
+
+app.MapGet("/api/health/db", async (StockFlowDbContext dbContext) =>
+{
+    var canConnect = await dbContext.Database.CanConnectAsync();
+
+    if (!canConnect)
+    {
+        return Results.Problem(
+            title: "Database connection failed",
+            statusCode: StatusCodes.Status503ServiceUnavailable
+        );
+    }
+
+    return Results.Ok(new
+    {
+        status = "connected",
+        database = "stockflow_db",
+        provider = "PostgreSQL"
     });
 });
 
