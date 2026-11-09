@@ -1,3 +1,4 @@
+
 using StockFlow.Application.DTOs.Products;
 using StockFlow.Domain.Entities;
 
@@ -24,7 +25,6 @@ public interface IProductRepository
         Guid categoryId,
         CancellationToken cancellationToken = default
     );
-
 
     Task<IReadOnlyList<Product>> GetAllAsync(
         ProductQueryParameters parameters,
