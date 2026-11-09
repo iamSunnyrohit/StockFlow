@@ -20,6 +20,12 @@ public interface IProductRepository
         CancellationToken cancellationToken = default
     );
 
+    Task<bool> CategoryIsActiveAsync(
+        Guid categoryId,
+        CancellationToken cancellationToken = default
+    );
+
+
     Task<IReadOnlyList<Product>> GetAllAsync(
         ProductQueryParameters parameters,
         CancellationToken cancellationToken = default
