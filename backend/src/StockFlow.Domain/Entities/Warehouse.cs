@@ -16,4 +16,7 @@ public class Warehouse : BaseEntity
 
     public ICollection<Inventory> Inventories { get; set; }
         = new List<Inventory>();
+
+    public ICollection<StockMovement> StockMovements { get; set; }
+        = new List<StockMovement>();
 }

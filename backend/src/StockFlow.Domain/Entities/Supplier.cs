@@ -17,4 +17,8 @@ public class Supplier : BaseEntity
     public string? City { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    public ICollection<PurchaseOrder> PurchaseOrders { get; set; }
+    = new List<PurchaseOrder>();
 }
+
