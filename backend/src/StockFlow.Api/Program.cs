@@ -4,6 +4,7 @@ using StockFlow.Application.Interfaces.Repositories;
 using StockFlow.Application.Interfaces.Services;
 using StockFlow.Application.Services;
 using StockFlow.Infrastructure.Persistence.Repositories;
+using StockFlow.Api.Middleware;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +51,7 @@ if (app.Environment.IsDevelopment())
 
     await DbInitializer.InitializeAsync(dbContext);
 }
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseCors("StockFlowFrontend");
 
@@ -87,3 +89,5 @@ app.MapGet("/api/health/db", async (StockFlowDbContext dbContext) =>
 });
 
 app.Run();
+
+public partial class Program { }
