@@ -11,7 +11,8 @@ public class InventoryConfiguration : IEntityTypeConfiguration<Inventory>
         builder.ToTable("inventories");
 
         builder.HasKey(x => x.Id);
-
+        
+        builder.Property<uint>("xmin").IsRowVersion();
         builder.Property(x => x.QuantityOnHand)
             .HasPrecision(18, 3);
 
