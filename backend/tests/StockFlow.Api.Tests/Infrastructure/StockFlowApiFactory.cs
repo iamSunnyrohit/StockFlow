@@ -21,6 +21,8 @@ public class StockFlowApiFactory : WebApplicationFactory<Program>
 
     public Mock<IStockService> StockServiceMock { get; } = new();
 
+    public Mock<ISupplierService> SupplierServiceMock { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -43,6 +45,7 @@ public class StockFlowApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<IWarehouseService>();
             services.RemoveAll<IInventoryService>();
             services.RemoveAll<IStockService>();
+            services.RemoveAll<ISupplierService>();
 
 
             services.AddSingleton(ProductServiceMock.Object);
@@ -50,6 +53,7 @@ public class StockFlowApiFactory : WebApplicationFactory<Program>
             services.AddSingleton(WarehouseServiceMock.Object);
             services.AddSingleton(InventoryServiceMock.Object);
             services.AddSingleton(StockServiceMock.Object);
+            services.AddSingleton(SupplierServiceMock.Object);
         });
     }
 }
