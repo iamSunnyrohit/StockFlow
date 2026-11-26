@@ -10,6 +10,11 @@ public interface ISupplierRepository
         CancellationToken cancellationToken = default
     );
 
+    Task<Supplier?> GetByNameAsync(
+    string name,
+    CancellationToken cancellationToken = default
+    );
+
     Task<IReadOnlyList<Supplier>> GetAllAsync(
         SupplierQueryParameters parameters,
         CancellationToken cancellationToken = default

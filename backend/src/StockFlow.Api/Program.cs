@@ -36,6 +36,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IStockService, StockService>();
+builder.Services.AddScoped<ISupplierService, SupplierService>();
 
 builder.Services.AddCors(options =>
 {

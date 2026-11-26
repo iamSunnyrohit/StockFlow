@@ -26,6 +26,20 @@ public class SupplierRepository : ISupplierRepository
             );
     }
 
+    public async Task<Supplier?> GetByNameAsync(
+    string name,
+    CancellationToken cancellationToken = default)
+{
+    var lowered = name.ToLower();
+
+    return await _context.Suppliers
+        .AsNoTracking()
+        .FirstOrDefaultAsync(
+            supplier => supplier.Name.ToLower() == lowered,
+            cancellationToken
+        );
+}
+
     public async Task<IReadOnlyList<Supplier>> GetAllAsync(
         SupplierQueryParameters parameters,
         CancellationToken cancellationToken = default)
