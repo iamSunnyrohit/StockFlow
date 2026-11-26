@@ -13,6 +13,8 @@ public class PurchaseOrderConfiguration
 
         builder.HasKey(x => x.Id);
 
+        builder.Property<uint>("xmin").IsRowVersion();
+
         builder.Property(x => x.OrderNumber)
             .IsRequired()
             .HasMaxLength(50);
