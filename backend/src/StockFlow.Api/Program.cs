@@ -13,6 +13,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddControllers();
 
+
 var connectionString = builder.Configuration
     .GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
@@ -28,6 +29,7 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IStockRepository, StockRepository>();
+builder.Services.AddScoped<ISupplierRepository, SupplierRepository>();
 
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
